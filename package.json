@@ -1,0 +1,18 @@
+{
+    "name": "craigs-scraper",
+    "version": "v0.0.1",
+    "description": "Search and take actions on jobs",
+    "keywords": [],
+    "repository": { "type": "git", "url": "" },
+    "author": "Konstantinos Vaggelakos <kozze89@gmail.com>",
+    "engines": {
+        "node" : "~0.8",
+        "npm": "1"
+    },
+    "dependencies": {
+        "commander": "",
+        "winston": "",
+        "node.io": ""
+    },
+    "devDependencies": {}
+}
