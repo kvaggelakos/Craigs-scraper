@@ -2,7 +2,7 @@
 # @@ScriptName: app.js
 # @@Author: Konstantinos Vaggelakos<kozze89@gmail.com>
 # @@Create Date: 2013-06-10 12:29:34
-# @@Modify Date: 2013-06-10 16:31:02
+# @@Modify Date: 2013-06-12 17:01:44
 # @@Function:
 #*********************************************************/
 
@@ -12,6 +12,7 @@ var program = require('commander')
     , logger = require('winston')
     , util = require('util')
     , nodeio = require('node.io')
+    , fs = require('fs')
     , config = require('./config');
 
 
@@ -34,7 +35,6 @@ init();
 
 function init() {
   // Print what is going to happen
-  console.log(process.args);
   if (typeof process.args ===  'undefined') {
     logger.info('User did not specify any search term, using iOS as default. Re-run with --help for options');
     program.search = 'iOS';
@@ -55,30 +55,37 @@ function getListings(baseurl, searchPath, searchString) {
       if (err) {logger.error('Something went wrong! Try again later?\nerror: ' + err); return;}
 
       // For each job look for a link or email
-      var jobs = $('p.row a.i');
+      var jobs = $('p.row span.pl a');
       jobs.each(function(row) {
-        getListingPage(baseurl + row.attribs.href);
-        return;
+        // Quick and dirty way of getting the links
+        var link = row.attribs['href'];
+        var name = row.fulltext;
+        //console.log(name + ' (' + link + ')');
+        getListingPage(name, baseurl + link);
       });
 
-      logger.info('Processed ' + jobs.length + ' jobs');
+      logger.info('Processing ' + jobs.length + ' jobs');
     });
   });
 }
 
-function getListingPage(url) {
+function getListingPage(name, url) {
   nodeio.scrape(function() {
     this.getHtml(url, function(err, $) {
-      var postingbody = $('#postingbody').rawtext;
-      console.log(extractEmails(postingbody));
+      var replyEmail = $('section.dateReplyBar a').first().text;
+      if (replyEmail && replyEmail != '?') {
+        logger.info('Found email: ' + replyEmail);
+        saveResults(name, replyEmail);
+      }
     });
   });
 }
 
-function extractEmails(text) {
-  return text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
+function saveResults(name, info) {
+  fs.appendFile('results.txt', name + ': ' + info + '\n', function(err) {
+    if(err) { logger.error(err); return; }
+  });
 }
-
 
 
 
