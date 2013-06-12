@@ -2,7 +2,7 @@
 # @@ScriptName: app.js
 # @@Author: Konstantinos Vaggelakos<kozze89@gmail.com>
 # @@Create Date: 2013-06-10 12:29:34
-# @@Modify Date: 2013-06-12 17:01:44
+# @@Modify Date: 2013-06-12 17:21:15
 # @@Function:
 #*********************************************************/
 
@@ -13,6 +13,7 @@ var program = require('commander')
     , util = require('util')
     , nodeio = require('node.io')
     , fs = require('fs')
+    , emailer = require('./emailer')
     , config = require('./config');
 
 
@@ -29,6 +30,8 @@ logger.add(logger.transports.Console, {
 program
   .version('0.0.1')
   .option('-s, --search [value]', 'Search for a specific term')
+  .option('-r, --respond-to [value]', 'This is the from field in the emails sent')
+  .option('-t, --text [file]', 'The msg to send in the email, from a file')
   .parse(process.argv);
 
 init();
