@@ -2,14 +2,13 @@
 # @@ScriptName: emailer.js
 # @@Author: Konstantinos Vaggelakos<kozze89@gmail.com>
 # @@Create Date: 2013-05-06 20:42:13
-# @@Modify Date: 2013-07-09 18:03:01
+# @@Modify Date: 2013-07-09 18:09:16
 # @@Function:
 #*********************************************************/
 
 /* jshint laxcomma:true */
 
-var email = require('emailjs')
-    , logger = require('winston')
+var logger = require('winston')
     , config = require('./config')
     , nodemailer = require('nodemailer');
 
