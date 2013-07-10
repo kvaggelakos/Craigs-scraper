@@ -2,7 +2,7 @@
 # @@ScriptName: emailer.js
 # @@Author: Konstantinos Vaggelakos<kozze89@gmail.com>
 # @@Create Date: 2013-05-06 20:42:13
-# @@Modify Date: 2013-06-12 17:17:31
+# @@Modify Date: 2013-07-09 18:03:01
 # @@Function:
 #*********************************************************/
 
@@ -10,7 +10,16 @@
 
 var email = require('emailjs')
     , logger = require('winston')
-    , config = require('./config');
+    , config = require('./config')
+    , nodemailer = require('nodemailer');
+
+var smtpTransport = nodemailer.createTransport("SMTP", {
+  service: "Gmail",
+  auth: {
+    user: config.email.username,
+    pass: config.email.password
+  }
+});
 
 exports.send = function(to, from, msg, subject) {
   if (!to || !from || !msg || !subject) {
@@ -18,23 +27,20 @@ exports.send = function(to, from, msg, subject) {
     return false;
   }
 
-  var server  = email.server.connect({
-    user:     config.email.username,
-    password: config.email.password,
-    host:     config.email.host,
-    ssl:      config.email.ssl
-  });
+  var mailOptions = {
+      from: '<' + from + '>',
+      to: to,
+      subject: subject,
+      text: msg,
+      html: msg
+  };
 
-  server.send({
-    text:    msg,
-    from:    from,
-    to:      to,
-    subject: subject
-  }, function(err, message) {
-    if (err) {
-      logger.error(err);
-      return false;
+  // send mail with defined transport object
+  smtpTransport.sendMail(mailOptions, function(error, response){
+    if (error) {
+      logger.error(error);
+    } else {
+      logger.info('Sent email to: ' + to);
     }
-    return true;
   });
-}
+};

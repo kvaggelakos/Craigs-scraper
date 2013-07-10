@@ -12,7 +12,7 @@
     "dependencies": {
         "commander": "",
         "winston": "",
-        "node.io": ""
+        "nodemailer": ""
     },
     "devDependencies": {}
 }

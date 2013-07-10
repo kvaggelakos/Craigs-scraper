@@ -2,7 +2,7 @@
 # @@ScriptName: app.js
 # @@Author: Konstantinos Vaggelakos<kozze89@gmail.com>
 # @@Create Date: 2013-06-10 12:29:34
-# @@Modify Date: 2013-06-12 17:21:15
+# @@Modify Date: 2013-07-09 18:03:39
 # @@Function:
 #*********************************************************/
 
@@ -37,15 +37,36 @@ program
 init();
 
 function init() {
-  // Print what is going to happen
-  if (typeof process.args ===  'undefined') {
-    logger.info('User did not specify any search term, using iOS as default. Re-run with --help for options');
+  // Check respond to 
+  if (typeof program.respondTo === 'undefined') {
+    help(true, 'You did not specify where the receiver should respond to.');
+  }
+
+  // Check that message file is specified
+  if (typeof program.text === 'undefined') {
+    help(true, 'You have to specify the file containing your message.');
+  } else {
+    // Read the file with the message
+    program.text = fs.readFileSync(program.text, 'utf8');
+  }
+
+  // Check the search term that the user specified
+  if (typeof program.search ===  'undefined') {
+    help(false, 'You did not specify any search term, using iOS as default.');
     program.search = 'iOS';
   } else {
     logger.info('Searching for jobs on craigslist with the search term: ' + program.search);
   }
+
   // Start the search
   getListings(config.url.base, config.url.searchPath, program.search);
+}
+
+function help(stop, msg) {
+  logger.info(msg + ' Re-run with --help for options');
+  if (stop) {
+    process.exit();
+  }
 }
 
 function getListings(baseurl, searchPath, searchString) {
@@ -79,6 +100,7 @@ function getListingPage(name, url) {
       if (replyEmail && replyEmail != '?') {
         logger.info('Found email: ' + replyEmail);
         saveResults(name, replyEmail);
+        emailer.send(replyEmail, program.respondTo, program.text, config.email.subject);
       }
     });
   });
