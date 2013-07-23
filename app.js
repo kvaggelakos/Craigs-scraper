@@ -2,7 +2,7 @@
 # @@ScriptName: app.js
 # @@Author: Konstantinos Vaggelakos<kozze89@gmail.com>
 # @@Create Date: 2013-06-10 12:29:34
-# @@Modify Date: 2013-07-22 18:02:32
+# @@Modify Date: 2013-07-22 19:40:55
 # @@Function:
 #*********************************************************/
 
@@ -64,7 +64,7 @@ function init() {
   if (typeof program.dryRun === 'undefined') {
     logger.info('Running for real!');
   } else {
-    logger.info('This is only a dry run, which means that no sending of emails or saving of emails');
+    logger.info('This is only a dry run, which means that no sending or saving of emails');
   }
 
   // Read in the results.txt, to not resend to the same people
@@ -120,7 +120,7 @@ function getListingPage(name, url) {
         logger.info('Found email: ' + replyEmail);
         saveResults(name, replyEmail, function(err, email) {
           if (err) {
-            logger.error(err);
+            logger.error(err.message);
           } else {
             console.log('Should send email');
             if (!program.dryRyn) {
@@ -147,7 +147,6 @@ function saveResults(name, email, callback) {
   } else {
     return callback(new Error('Already contacted ' + email + ' before'));
   }
-  return callback(new Error('Something went terribly wrong'));
 }
 
 function readEmails() {
