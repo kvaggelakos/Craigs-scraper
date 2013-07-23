@@ -13,7 +13,8 @@
         "commander": "",
         "node.io": "",
         "winston": "",
-        "nodemailer": ""
+        "nodemailer": "",
+        "underscore": ""
     },
     "devDependencies": {}
 }

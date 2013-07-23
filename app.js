@@ -2,7 +2,7 @@
 # @@ScriptName: app.js
 # @@Author: Konstantinos Vaggelakos<kozze89@gmail.com>
 # @@Create Date: 2013-06-10 12:29:34
-# @@Modify Date: 2013-07-09 18:03:39
+# @@Modify Date: 2013-07-22 18:02:32
 # @@Function:
 #*********************************************************/
 
@@ -14,7 +14,8 @@ var program = require('commander')
     , nodeio = require('node.io')
     , fs = require('fs')
     , emailer = require('./emailer')
-    , config = require('./config');
+    , config = require('./config')
+    , _ = require('underscore');
 
 
 // Set up the logger
@@ -32,6 +33,7 @@ program
   .option('-s, --search [value]', 'Search for a specific term')
   .option('-r, --respond-to [value]', 'This is the from field in the emails sent')
   .option('-t, --text [file]', 'The msg to send in the email, from a file')
+  .option('-d, --dry-run', 'Use this to show a dry run (not actually emailing or saving results')
   .parse(process.argv);
 
 init();
@@ -53,10 +55,23 @@ function init() {
   // Check the search term that the user specified
   if (typeof program.search ===  'undefined') {
     help(false, 'You did not specify any search term, using iOS as default.');
-    program.search = 'iOS';
+    program.search = encodeURIComponent('iOS');
   } else {
     logger.info('Searching for jobs on craigslist with the search term: ' + program.search);
+    program.search = encodeURIComponent(program.search);
   }
+
+  if (typeof program.dryRun === 'undefined') {
+    logger.info('Running for real!');
+  } else {
+    logger.info('This is only a dry run, which means that no sending of emails or saving of emails');
+  }
+
+  // Read in the results.txt, to not resend to the same people
+  program.resultsFile = 'results.txt';
+  program.emailsUsed = [];
+  readEmails();
+  logger.info('Skipping ' + program.emailsUsed.length + ' emails, from the results.txt file');
 
   // Start the search
   getListings(config.url.base, config.url.searchPath, program.search);
@@ -70,13 +85,12 @@ function help(stop, msg) {
 }
 
 function getListings(baseurl, searchPath, searchString) {
-
   var url = baseurl + util.format(searchPath, searchString);
   logger.info('Fetching jobs from url: ' + url);
 
   nodeio.scrape(function() {
     this.getHtml(url, function(err, $) {
-      if (err) {logger.error('Something went wrong! Try again later?\nerror: ' + err); return;}
+      if (err) {return logger.error('Something went wrong! Try again later?\nerror: ' + err);}
 
       // For each job look for a link or email
       var jobs = $('p.row span.pl a');
@@ -84,8 +98,12 @@ function getListings(baseurl, searchPath, searchString) {
         // Quick and dirty way of getting the links
         var link = row.attribs['href'];
         var name = row.fulltext;
-        //console.log(name + ' (' + link + ')');
-        getListingPage(name, baseurl + link);
+        
+        if (link.indexOf('http://') > 0) {
+          getListingPage(name, link); // Full link path
+        } else {
+          getListingPage(name, baseurl + link); // just the last part
+        }
       });
 
       logger.info('Processing ' + jobs.length + ' jobs');
@@ -94,23 +112,47 @@ function getListings(baseurl, searchPath, searchString) {
 }
 
 function getListingPage(name, url) {
+  logger.debug('Processing job: ' + name + ' at url: ' + url);
   nodeio.scrape(function() {
     this.getHtml(url, function(err, $) {
       var replyEmail = $('section.dateReplyBar a').first().text;
       if (replyEmail && replyEmail != '?') {
         logger.info('Found email: ' + replyEmail);
-        saveResults(name, replyEmail);
-        emailer.send(replyEmail, program.respondTo, program.text, config.email.subject);
+        saveResults(name, replyEmail, function(err, email) {
+          if (err) {
+            logger.error(err);
+          } else {
+            console.log('Should send email');
+            if (!program.dryRyn) {
+              emailer.send(email, program.respondTo, program.text, config.email.subject);
+            }
+          }
+        });
       }
     });
   });
 }
 
-function saveResults(name, info) {
-  fs.appendFile('results.txt', name + ': ' + info + '\n', function(err) {
-    if(err) { logger.error(err); return; }
-  });
+function saveResults(name, email, callback) {
+  if (!_.contains(program.emailsUsed, email)) {
+    logger.info('Did not have email in list');
+    if (!program.dryRun) {
+      fs.appendFile(program.resultsFile, name + ': ' + email + '\n', function(err) {
+        if(err) {
+          return callback(err);
+        }
+        return callback(null, email);
+      });
+    }
+  } else {
+    return callback(new Error('Already contacted ' + email + ' before'));
+  }
+  return callback(new Error('Something went terribly wrong'));
 }
 
-
+function readEmails() {
+  fs.readFileSync(program.resultsFile, 'utf8').split('\n').forEach(function (entry) {
+    program.emailsUsed.push(entry.split(': ')[1]);
+  });
+}
 
