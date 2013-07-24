@@ -2,7 +2,7 @@
 # @@ScriptName: app.js
 # @@Author: Konstantinos Vaggelakos<kozze89@gmail.com>
 # @@Create Date: 2013-06-10 12:29:34
-# @@Modify Date: 2013-07-22 19:40:55
+# @@Modify Date: 2013-07-24 12:54:43
 # @@Function:
 #*********************************************************/
 
@@ -68,10 +68,9 @@ function init() {
   }
 
   // Read in the results.txt, to not resend to the same people
-  program.resultsFile = 'results.txt';
   program.emailsUsed = [];
   readEmails();
-  logger.info('Skipping ' + program.emailsUsed.length + ' emails, from the results.txt file');
+  logger.info('Skipping ' + program.emailsUsed.length + ' emails, from the ' + config.results.file + ' file');
 
   // Start the search
   getListings(config.url.base, config.url.searchPath, program.search);
@@ -98,7 +97,7 @@ function getListings(baseurl, searchPath, searchString) {
         // Quick and dirty way of getting the links
         var link = row.attribs['href'];
         var name = row.fulltext;
-        
+
         if (link.indexOf('http://') > 0) {
           getListingPage(name, link); // Full link path
         } else {
@@ -122,7 +121,6 @@ function getListingPage(name, url) {
           if (err) {
             logger.error(err.message);
           } else {
-            console.log('Should send email');
             if (!program.dryRyn) {
               emailer.send(email, program.respondTo, program.text, config.email.subject);
             }
@@ -137,7 +135,7 @@ function saveResults(name, email, callback) {
   if (!_.contains(program.emailsUsed, email)) {
     logger.info('Did not have email in list');
     if (!program.dryRun) {
-      fs.appendFile(program.resultsFile, name + ': ' + email + '\n', function(err) {
+      fs.appendFile(config.results.file, name + ': ' + email + '\n', function(err) {
         if(err) {
           return callback(err);
         }
@@ -150,8 +148,12 @@ function saveResults(name, email, callback) {
 }
 
 function readEmails() {
-  fs.readFileSync(program.resultsFile, 'utf8').split('\n').forEach(function (entry) {
-    program.emailsUsed.push(entry.split(': ')[1]);
-  });
+  if (fs.existsSync(config.results.file)) {
+    fs.readFileSync(config.results.file, 'utf8').split('\n').forEach(function (entry) {
+      program.emailsUsed.push(entry.split(': ')[1]);
+    });
+  } else {
+    // File probably doesn't exist
+    logger.info('results.txt doesnt exist, continuing without history...');
+  }
 }
-

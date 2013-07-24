@@ -2,7 +2,7 @@
 # @@ScriptName: emailer.js
 # @@Author: Konstantinos Vaggelakos<kozze89@gmail.com>
 # @@Create Date: 2013-05-06 20:42:13
-# @@Modify Date: 2013-07-09 18:09:16
+# @@Modify Date: 2013-07-24 12:30:16
 # @@Function:
 #*********************************************************/
 
@@ -30,7 +30,7 @@ exports.send = function(to, from, msg, subject) {
       from: '<' + from + '>',
       to: to,
       subject: subject,
-      text: msg,
+      generateTextFromHTML: true,
       html: msg
   };
 
@@ -42,4 +42,8 @@ exports.send = function(to, from, msg, subject) {
       logger.info('Sent email to: ' + to);
     }
   });
+};
+
+exports.done = function() {
+  smtpTransport.close();
 };
